@@ -6,7 +6,7 @@
 /*   By: pmclaugh <pmclaugh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/05/30 18:38:29 by pmclaugh          #+#    #+#             */
-/*   Updated: 2017/07/06 18:38:49 by pmclaugh         ###   ########.fr       */
+/*   Updated: 2017/07/07 01:34:51 by pmclaugh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,10 @@
 
 void transpose_matches(t_bundle *wb)
 {
+    /*
+        the bundle we get describes a set of cells and has a map of what workunits use them.
+        we need to turn it into a set of workunits with a list of which cells they consist of.
+    */
     int **manifests = calloc(wb->idcount, sizeof(int *));
     int *manifest_lens = calloc(wb->idcount, sizeof(int));
     for (int i = 0; i < wb->cellcount; i++)
@@ -86,7 +90,6 @@ t_bundle *deserialize_bundle(t_msg m)
         memcpy(b->cells[i], m.data + offset, b->cell_sizes[i] * sizeof(cl_float4));
         offset += b->cell_sizes[i] * sizeof(cl_float4);
     }
-    //free(m.data);
     b->index = 0;
     transpose_matches(b);
     return (b);
@@ -94,6 +97,12 @@ t_bundle *deserialize_bundle(t_msg m)
 
 t_workunit *kick_bundle(t_bundle *b)
 {
+
+    /*
+        Treats the bundle as an iterator that we can "kick"
+        to make it spit out the next workunit. This way we can
+        start working on some of the first units as we're still unpacking the rest.
+    */
     static int maxM;
     t_workunit *w = calloc(1, sizeof(t_workunit));
     int i = b->index;

@@ -6,15 +6,20 @@
 /*   By: pmclaugh <pmclaugh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/05/30 18:34:25 by pmclaugh          #+#    #+#             */
-/*   Updated: 2017/07/06 18:35:51 by pmclaugh         ###   ########.fr       */
+/*   Updated: 2017/07/07 01:30:13 by pmclaugh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "dispatcher.h"
 
+/*
+	We can write the output file as we receive workunits back from the workers.
+	Originally we were waiting til everything had come back, then writing.
+	This was fine for small problem sizes but for 2^28 particles the output file is many GB
+*/
+
 void setup_async_file(t_dispatcher *dispatcher)
 {
-	//makes a file of appropriate size to write the output to.
 	char *filename;
 	asprintf(&filename, "%s-%d.jgrav", dispatcher->name, dispatcher->ticks_done);
 	pthread_mutex_lock(&dispatcher->output_mutex);
@@ -33,6 +38,5 @@ void async_save(t_dispatcher *dispatcher, unsigned long offset, t_WU *wu)
 	fseek(dispatcher->fp, offset * sizeof(cl_float4) + sizeof(long), SEEK_SET);
 	for (int i = 0; i < wu->localcount; i++)
 		fwrite(&wu->local_bodies[i].position, sizeof(cl_float4), 1, dispatcher->fp);
-	fflush(dispatcher->fp);
 	pthread_mutex_unlock(&dispatcher->output_mutex);
 }

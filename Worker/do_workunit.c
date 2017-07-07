@@ -6,7 +6,7 @@
 /*   By: pmclaugh <pmclaugh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/07/06 18:40:33 by pmclaugh          #+#    #+#             */
-/*   Updated: 2017/07/06 18:52:31 by pmclaugh         ###   ########.fr       */
+/*   Updated: 2017/07/07 01:44:40 by pmclaugh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,6 +124,19 @@ static cl_kernel   make_kernel(t_context *c, char *sourcefile, char *name)
     return (k);
 }
 
+/*
+    This is the core computation. The code for the GPU kernel is in nxm2.cl.
+    OpenCL is very careful and verbose, so the function is quite long, but essentially
+    it is just allocating space on the GPU, transferring the relevant data,
+    starting the kernel, waiting for it to finish, and pulling the data off.
+
+    Calling clFinish() for each workunit is unfortunate, but this was primarily developed
+    on OS X, which does not allow CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE. We tested
+    not calling to finish (hence the cl_events everywhere), and instead returning a cl_event 
+    that the sender thread would wait on, but in practice it offered only minimal speedup 
+    and occasionally caused instability.
+*/
+
 static t_body *crunch_NxM(cl_float4 *N, cl_float4 *V, cl_float4 *M, size_t ncount, size_t mcount)
 {
     static t_context   *context;
@@ -157,12 +170,13 @@ static t_body *crunch_NxM(cl_float4 *N, cl_float4 *V, cl_float4 *M, size_t ncoun
 
     //copy over initial data to device locations
     cl_event eN, eM, eV;
-    clEnqueueWriteBuffer(context->commands, d_N_start, CL_TRUE, 0, sizeof(cl_float4) * ncount, N, 0, NULL, &eN);
-    clEnqueueWriteBuffer(context->commands, d_M, CL_TRUE, 0, sizeof(cl_float4) * mcount, M, 0, NULL, &eM);
-    clEnqueueWriteBuffer(context->commands, d_V_start, CL_TRUE, 0, sizeof(cl_float4) * ncount, V, 0, NULL, &eV);
+    clEnqueueWriteBuffer(context->commands, d_N_start, CL_FALSE, 0, sizeof(cl_float4) * ncount, N, 0, NULL, &eN);
+    clEnqueueWriteBuffer(context->commands, d_M, CL_FALS, 0, sizeof(cl_float4) * mcount, M, 0, NULL, &eM);
+    clEnqueueWriteBuffer(context->commands, d_V_start, CL_FALSE, 0, sizeof(cl_float4) * ncount, V, 0, NULL, &eV);
 
     cl_event loadevents[3] = {eN, eM, eV};
 
+    //set some parameters up
     size_t tps = 32;
     size_t global = ncount * tps;
     size_t mscale = mcount;
@@ -172,6 +186,7 @@ static t_body *crunch_NxM(cl_float4 *N, cl_float4 *V, cl_float4 *M, size_t ncoun
     float grav = G;
     size_t count = ncount;
 
+    //connect kernel arguments to the kernel
     clSetKernelArg(k_nbody, 0, sizeof(cl_mem), &d_N_start);
     clSetKernelArg(k_nbody, 1, sizeof(cl_mem), &d_N_end);
     clSetKernelArg(k_nbody, 2, sizeof(cl_mem), &d_M);
@@ -185,15 +200,12 @@ static t_body *crunch_NxM(cl_float4 *N, cl_float4 *V, cl_float4 *M, size_t ncoun
     clSetKernelArg(k_nbody, 10, sizeof(unsigned int), &mscale);
     clSetKernelArg(k_nbody, 11, sizeof(unsigned int), &tps);
 
-    //printf("global is %zu, local is %zu\n", global, local);
-    //printf("going onto the GPU\n");
-
     cl_event compute;
     cl_event offN, offV;
 
     err = clEnqueueNDRangeKernel(context->commands, k_nbody, 1, NULL, &global, &local, 3, loadevents, &compute);
-    clEnqueueReadBuffer(context->commands, d_N_end, CL_TRUE, 0, sizeof(cl_float4) * count, output_p, 1, &compute, &offN);
-    clEnqueueReadBuffer(context->commands, d_V_end, CL_TRUE, 0, sizeof(cl_float4) * count, output_v, 1, &compute, &offV);
+    clEnqueueReadBuffer(context->commands, d_N_end, CL_FALSE, 0, sizeof(cl_float4) * count, output_p, 1, &compute, &offN);
+    clEnqueueReadBuffer(context->commands, d_V_end, CL_FALSE, 0, sizeof(cl_float4) * count, output_v, 1, &compute, &offV);
     clFinish(context->commands);
 
     clReleaseMemObject(d_N_start);
@@ -222,7 +234,7 @@ static t_body *crunch_NxM(cl_float4 *N, cl_float4 *V, cl_float4 *M, size_t ncoun
 
 void do_workunit(t_workunit *w)
 {
-    //printf("N X M: %d x %d\n", w->localcount + w->npadding, w->neighborcount + w->mpadding);
+    //this is just a convenient wrapper function for the above function.
     w->local_bodies = crunch_NxM(w->N, w->V, w->M, w->localcount + w->npadding, w->neighborcount + w->mpadding);
     w->neighborcount = 0;
     if (w->N) free(w->N);

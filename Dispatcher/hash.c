@@ -6,7 +6,7 @@
 /*   By: pmclaugh <pmclaugh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/05/25 16:49:38 by elee              #+#    #+#             */
-/*   Updated: 2017/07/06 18:37:10 by pmclaugh         ###   ########.fr       */
+/*   Updated: 2017/07/07 01:31:14 by pmclaugh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -95,38 +95,31 @@ void	dict_insert(t_dict *dict, t_tree *cell, size_t subkey)
 
 	if (cell->count == 0)
 	{
-		// printf("cell was empty\n");
 		return ;
 	}
 	key = (size_t)(cell);
 	hash_val = hash(dict, key);
-	// printf("hash val was %u\n", hash_val);
 	curr = dict->table[hash_val];
 	last = curr;
-	//run through keys until matching or null
 	while (curr && key != curr->key)
 	{
-		//printf("moving forward\n");
 		last = curr;
 		curr = curr->next_key;
 	}
 	if (!last) //there was nothing at this hash (last never changed from curr and curr was null at start)
 	{
-		//printf("empty entry\n");
 		//setup new first key & subkey
 		dict->table[hash_val] = create_pair(key);
 		dict->table[hash_val]->subkeys = create_pair(subkey);
 	}
 	else if (!curr) //there was an entry at this hash but none for this actual cell. ordinary collision.
 	{
-		//printf("regular collision\n");
 		//add key with subkey at end of keylist
 		last->next_key = create_pair(key);
 		last->next_key->subkeys = create_pair(subkey);
 	}
 	else //we've accounted for this cell already. good collision.
 	{
-		//printf("overlap\n");
 		//add a subkey (there guaranteed is one, just push to top of list)
 		last = curr->subkeys;
 		curr->subkeys = create_pair(subkey);
@@ -153,10 +146,6 @@ int *make_subkey_arr(t_pair *subkey, int *len)
 		count++;
 	}
 	*len = count;
-	// printf("count %d\n",count);
-	// for (int i = 0; i < count; i++)
-	// 	printf("%d ", arr[i]);
-	// printf("\n");
 	return (arr);
 }
 

@@ -6,7 +6,7 @@
 /*   By: pmclaugh <pmclaugh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/07/06 18:34:31 by pmclaugh          #+#    #+#             */
-/*   Updated: 2017/07/06 21:43:09 by pmclaugh         ###   ########.fr       */
+/*   Updated: 2017/07/06 21:49:09 by pmclaugh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@
 /*
     Leaf threshold determines how finely we divide the space.
     If a cell has more than leaf_threshold particles, it gets subdivided.
+
     In the basic Barnes-Hut algorithm, leaf threshold is 1.
     The distributed nature of our approach made this impractical and unnecessary.
     This is discussed further at the multipole acceptance function below
@@ -106,7 +107,7 @@ t_tree *make_tree(t_body *bodies, int count)
 ///////////////       Morton Codes             ///////////////
 ///////////////////////////////////////////////////////////////
 
-// method to insert 2 0's before each bit of an unsigned int,
+// fast method to insert 2 0's before each bit of an unsigned int,
 // ie 1101 becomes 001001000001
 // credit to http://www.forceflow.be/2013/10/07/morton-encodingdecoding-through-bit-interleaving-implementations/
 uint64_t splitBy3(const unsigned int a)
@@ -161,9 +162,9 @@ t_sortbod *make_sortbods(t_body *bodies, t_bounds bounds, int count)
 
     The Morton codes are 63 bits, 21 3-bit subcodes. They're like 21-digit numbers in base 8.
     Example with 12 bits / 4 subcodes, * is any digit:
-    The root contains all the particles ****
-    Its children are the 8 sets 0***, 1***, 2***...
-    The children of 0*** are the sets like 00**, 01**, 02**, etc.
+    -The root contains all the particles ****
+    -Its children are the 8 sets 0***, 1***, 2***...
+    -The children of 0*** are the sets like 00**, 01**, 02**, etc.
 
     Since it's already a sorted list, we do a binary search for the digit borders and construct the tree.
 */

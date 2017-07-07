@@ -1,4 +1,21 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   debundle_thread.c                                  :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: pmclaugh <pmclaugh@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2017/07/06 18:31:02 by pmclaugh          #+#    #+#             */
+/*   Updated: 2017/07/07 01:36:42 by pmclaugh         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 #include "worker.h"
+
+/*
+	More code governing the bundle system. Semaphores are used to create
+	a producer-consumer dynamic between this debundle thread, the calculation thread,
+	and the sender (ie return) thread.
+*/
 
 static void	delete_bundle(t_bundle *bundle)
 {
