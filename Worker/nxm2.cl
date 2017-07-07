@@ -1,3 +1,15 @@
+/*
+    Improved n-body GPU kernel. Adapted to asymmetric cross-multiplication, ie
+    one set (N) is usually significantly smaller than the other (M).
+    In practice, these numbers are usually something like 
+    N ~= 4,000 and 100,000 < M < 500,000.
+    Due to the nature of the problem and memory constraints,
+    launching threads per M is not viable, they must be per N.
+    However, best performance is attained when threadcount is quite high.
+    So we launch many threads per particle in N, using local memory aggressively
+    for an efficient computational pattern.
+*/
+
 static float4 pair_force(
     float4 pi,
     float4 pj,
@@ -68,15 +80,6 @@ kernel void nbody(
         vel.x += force.x * G * timestep;
         vel.y += force.y * G * timestep;
         vel.z += force.z * G * timestep;
-
-        float velsqr = vel.x * vel.x + vel.y * vel.y + vel.z * vel.z;
-        if (velsqr > 90000000000000000)
-        {
-            velsqr = sqrt(velsqr);
-            vel.x = vel.x / velsqr;
-            vel.y = vel.y / velsqr;
-            vel.z = vel.z / velsqr;
-        }
 
         pos.x += vel.x * timestep;
         pos.y += vel.y * timestep;

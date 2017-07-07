@@ -1,3 +1,10 @@
+/*
+    This is my implementation of the reference n-body kernels from NVIDIA and Apple.
+    Including this just for reference. nxm2.cl contains my (minor) improvements.
+    The use of copysign was specifically to test a particular theory (the Janus Model),
+    which includes notions of negative mass. It has no effect when all masses are >= 0.
+*/
+
 static float4 pair_force(
     float4 pi,
     float4 pj,

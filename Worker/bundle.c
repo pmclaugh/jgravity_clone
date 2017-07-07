@@ -1,22 +1,18 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   bundle.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: pmclaugh <pmclaugh@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2017/05/30 18:38:29 by pmclaugh          #+#    #+#             */
+/*   Updated: 2017/07/06 18:38:49 by pmclaugh         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "worker.h"
 #include "lz4.h"
 #include "transpose.h"
-
-t_msg decompress_message(t_msg m)
-{
-    //something is wrong with either this or the equivalent on dispatch side 
-    t_msg dc;
-    int decomp_len;
-    memcpy(&decomp_len, m.data, sizeof(int));
-    char *decompressed = calloc(1, decomp_len);
-    LZ4_decompress_safe(m.data + sizeof(int), decompressed, m.size - sizeof(int), decomp_len);
-    char *detransposed = calloc(1, decomp_len);
-    tpdec((unsigned char *)decompressed, decomp_len, (unsigned char *)detransposed, sizeof(int));
-    dc.size = decomp_len;
-    dc.data = detransposed;
-    free(decompressed);
-    return dc;
-}
 
 void transpose_matches(t_bundle *wb)
 {
@@ -53,7 +49,6 @@ size_t nearest_mult_256(size_t n)
 
 t_bundle *deserialize_bundle(t_msg m)
 {
-    //m = decompress_message(m);
     t_bundle *b = calloc(1, sizeof(t_bundle));
     size_t offset = 0;
 
